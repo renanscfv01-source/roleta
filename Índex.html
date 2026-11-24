@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>Painel de Aprendizado — Roleta</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1120;--panel:#151f31;--panel2:#1c2940;--line:#2b3a52;--text:#edf2f7;--muted:#9eacc0;--accent:#61a5fa;--green:#35c78a;--yellow:#f4c95d;--red:#fb7185}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1120,#111b2d);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:22px 15px 50px}header{margin-bottom:20px}h1{font-size:clamp(24px,4vw,34px);margin:0 0 6px}h2{font-size:19px;margin:0 0 14px}h3{font-size:16px;margin:0 0 8px}.sub,.muted{color:var(--muted)}.sub{margin:0}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.panel{background:rgba(21,31,49,.96);border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 10px 30px #0002}.span8{grid-column:span 8}.span4{grid-column:span 4}.span12{grid-column:span 12}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}.stat strong{display:block;font-size:24px}.stat span{font-size:12px;color:var(--muted)}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}input{width:100%;background:#0c1525;color:var(--text);border:1px solid #3a4b66;border-radius:10px;padding:12px;font:inherit;outline:none}input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #61a5fa22}
+.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.pct{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+button,.filelabel{border:1px solid transparent;border-radius:10px;padding:11px 14px;font:600 14px system-ui;cursor:pointer;background:#263650;color:var(--text);display:inline-flex;align-items:center;justify-content:center;gap:7px}
+button:hover,.filelabel:hover{filter:brightness(1.12)}button.primary{background:#2563eb}button.good{background:#087b58}button.warn{background:#79591a}button.danger{background:#7f293a}button.ghost{background:transparent;border-color:var(--line)}button:disabled{opacity:.4;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.status{margin-top:12px;padding:11px 12px;border-radius:10px;background:#0d1829;border:1px solid var(--line);color:var(--muted);font-size:13px}.status.goodtxt{border-color:#176b50;color:#9be8c7}.status.warntext{border-color:#80641d;color:#f8dfa0}.bar{height:10px;background:#26344a;border-radius:99px;overflow:hidden;margin-top:8px}.bar>div{height:100%;background:linear-gradient(90deg,#3986f6,#36c994);width:0}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:10px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}td.num{font-variant-numeric:tabular-nums}.pill{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;background:#243651;color:#b9d8ff}.pill.auto{background:#124a3b;color:#a7f3d0}.pill.manual{background:#4a3a1b;color:#f9dfa0}
+.columns{display:flex;gap:6px;height:12px;border-radius:99px;overflow:hidden;background:#27364b;margin:8px 0}.columns i:nth-child(1){background:#438df5}.columns i:nth-child(2){background:#27bd91}.columns i:nth-child(3){background:#e6b84f}
+.small{font-size:12px;color:var(--muted)}.empty{text-align:center;color:var(--muted);padding:24px}.right{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+@media(max-width:760px){.span8,.span4{grid-column:span 12}.fields{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(3,1fr)}.stat strong{font-size:20px}}
+@media(max-width:420px){.pct{grid-template-columns:1fr}.wrap{padding:15px 10px 35px}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>🧠 Painel de Aprendizado da Roleta</h1>
+  <p class="sub">Registre números e distribuições percentuais. O sistema aprende com as transições informadas e gera sugestões — não prevê resultados aleatórios.</p>
+</header>
+
+<div class="stats">
+  <div class="stat"><strong id="roundCount">0</strong><span>Rodadas registradas</span></div>
+  <div class="stat"><strong id="manualCount">0/20</strong><span>Etapa de aprendizado manual</span></div>
+  <div class="stat"><strong id="patternCount">0</strong><span>Transições aprendidas</span></div>
+</div>
+
+<div class="grid">
+<section class="panel span8">
+  <div class="right"><h2>Registrar rodada</h2><span id="phasePill" class="pill manual">APRENDIZADO MANUAL</span></div>
+  <div class="fields">
+    <div><label for="number">Número sorteado (0–36)</label><input id="number" type="number" min="0" max="36" step="1" placeholder="Ex.: 19"></div>
+    <div><label for="roundLabel">Rodada</label><input id="roundLabel" type="text" readonly value="1ª rodada"></div>
+    <div><label for="modeLabel">Modo</label><input id="modeLabel" type="text" readonly value="Manual"></div>
+    <div><label for="sumLabel">Total percentual</label><input id="sumLabel" type="text" readonly value="—"></div>
+  </div>
+  <div class="pct">
+    <div><label for="p1">Coluna 1 (%)</label><input id="p1" type="number" min="0" max="100" step="0.01" placeholder="25"></div>
+    <div><label for="p2">Coluna 2 (%)</label><input id="p2" type="number" min="0" max="100" step="0.01" placeholder="25"></div>
+    <div><label for="p3">Coluna 3 (%)</label><input id="p3" type="number" min="0" max="100" step="0.01" placeholder="50"></div>
+  </div>
+  <div class="columns" aria-label="Distribuição percentual"><i id="seg1" style="width:0%"></i><i id="seg2" style="width:0%"></i><i id="seg3" style="width:0%"></i></div>
+  <div class="small" id="sumHint">Informe as três porcentagens. A soma precisa ser 100%.</div>
+  <div class="actions">
+    <button class="primary" id="suggestBtn" type="button">✨ Gerar sugestão automática</button>
+    <button class="good" id="saveBtn" type="button">Salvar rodada</button>
+    <button class="ghost" id="clearBtn" type="button">Limpar campos</button>
+  </div>
+  <div id="message" class="status">Nas primeiras 20 rodadas, informe manualmente as três porcentagens. A partir da 21ª, você poderá gerar sugestões com base no histórico aprendido.</div>
+</section>
+
+<aside class="panel span4">
+  <h2>Como o aprendizado funciona</h2>
+  <p class="small">1. Cada rodada guarda o número e as três porcentagens.</p>
+  <p class="small">2. Cada par de rodadas gera uma transição: quanto cada coluna subiu ou desceu.</p>
+  <p class="small">3. Após 20 registros, o sistema compara as duas transições mais recentes com sequências anteriores.</p>
+  <p class="small">4. Se encontrar exemplos semelhantes, calcula uma sugestão pela média das mudanças seguintes. Se não encontrar evidência suficiente, avisa.</p>
+  <div class="status warntext">A sugestão é uma análise dos seus registros, não uma previsão da roleta. Resultados de roleta são aleatórios.</div>
+  <div style="margin-top:14px">
+    <div class="right"><span class="small">Progresso manual</span><strong id="progressText">0%</strong></div>
+    <div class="bar"><div id="progressBar"></div></div>
+  </div>
+</aside>
+
+<section class="panel span12">
+  <div class="right">
+    <h2>Histórico de rodadas</h2>
+    <span class="small" id="historyInfo">Nenhum registro ainda</span>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>#</th><th>Número</th><th>Coluna 1</th><th>Coluna 2</th><th>Coluna 3</th><th>Alteração vs. anterior</th><th>Origem</th></tr></thead>
+      <tbody id="historyBody"><tr><td colspan="7" class="empty">Os registros aparecerão aqui.</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel span12">
+  <div class="right"><h2>Ferramentas e dados</h2><span class="small">Os dados ficam salvos neste navegador.</span></div>
+  <div class="actions">
+    <button class="warn" id="undoBtn" type="button" disabled>↶ Desfazer última rodada</button>
+    <button class="ghost" id="exportJsonBtn" type="button">Exportar histórico (JSON)</button>
+    <button class="ghost" id="exportCsvBtn" type="button">Exportar histórico (CSV)</button>
+    <label class="filelabel" for="importFile">Importar backup</label><input id="importFile" type="file" accept=".json,application/json" hidden>
+    <button class="danger" id="resetBtn" type="button">Apagar todos os dados</button>
+  </div>
+  <div class="small" style="margin-top:12px">Recomendação: exporte um backup JSON periodicamente. O arquivo inclui as rodadas e os dados necessários para reconstruir o aprendizado.</div>
+</section>
+</div>
+</div>
+<script>
+(() => {
+'use strict';
+const STORAGE_KEY = 'roleta_aprendizado_v1';
+const $ = id => document.getElementById(id);
+let records = load();
+
+function load(){
+  try { const x = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(x) ? x : []; }
+  catch(e){ return []; }
+}
+function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
+function pct(r){ return [Number(r.p1), Number(r.p2), Number(r.p3)]; }
+function fmt(n){ return Number(n).toLocaleString('pt-BR',{maximumFractionDigits:2}); }
+function roundName(n){ return n + (n===1?'ª rodada':'ª rodada'); }
+function setMessage(text,kind=''){ $('message').textContent=text; $('message').className='status '+(kind==='good'?'goodtxt':kind==='warn'?'warntext':''); }
+function sumInputs(){
+  const vals=['p1','p2','p3'].map(id => $(id).value.trim()==='' ? NaN : Number($(id).value));
+  if(vals.some(v=>!Number.isFinite(v))) return {vals,sum:NaN,valid:false};
+  const sum=vals.reduce((a,b)=>a+b,0);
+  const valid=vals.every(v=>v>=0&&v<=100)&&Math.abs(sum-100)<0.011;
+  return {vals,sum,valid};
+}
+function updateVisual(){
+  const {vals,sum,valid}=sumInputs();
+  $('sumLabel').value=Number.isFinite(sum)?fmt(sum)+'%':'—';
+  if(vals.every(Number.isFinite)){
+    ['seg1','seg2','seg3'].forEach((id,i)=>$(id).style.width=Math.max(0,vals[i])+'%');
+  } else ['seg1','seg2','seg3'].forEach(id=>$(id).style.width='0%');
+  $('sumHint').textContent=valid?'Distribuição válida: total de 100%.':Number.isFinite(sum)?'A soma atual é '+fmt(sum)+'%. Ajuste para totalizar 100%.':'Informe as três porcentagens. A soma precisa ser 100%.';
+}
+function transition(a,b){ const x=pct(a),y=pct(b); return y.map((v,i)=>+(v-x[i]).toFixed(2)); }
+function transitions(){ return records.slice(1).map((r,i)=>({from:i,to:i+1,delta:transition(records[i],r)})); }
+function distance(a,b){ return a.reduce((s,v,i)=>s+Math.abs(v-b[i]),0); }
+function clampDistribution(values){
+  let v=values.map(x=>Math.max(0,Math.min(100,x)));
+  const sum=v.reduce((a,b)=>a+b,0);
+  if(sum<=0) return [33.33,33.33,33.34];
+  v=v.map(x=>x*100/sum);
+  v=v.map(x=>Math.round(x*100)/100);
+  const diff=+(100-v.reduce((a,b)=>a+b,0)).toFixed(2);
+  v[2]=+(v[2]+diff).toFixed(2);
+  return v;
+}
+/*
+  Compara as duas transições mais recentes com pares históricos de transições.
+  Um exemplo só é usado se existir uma transição posterior observada para aprender.
+*/
+function generateSuggestion(){
+  if(records.length<20){ setMessage('A sugestão automática só fica disponível a partir da 21ª rodada. Registros atuais: '+records.length+'.','warn'); return; }
+  if(records.length<3){ setMessage('Ainda não há transições suficientes.','warn'); return; }
+  const ts=transitions();
+  const lastA=ts[ts.length-2].delta, lastB=ts[ts.length-1].delta;
+  const candidates=[];
+  for(let i=0;i<ts.length-2;i++){
+    const d1=distance(ts[i].delta,lastA);
+    const d2=distance(ts[i+1].delta,lastB);
+    const score=d1+d2;
+    // A transição seguinte precisa existir e ter sido registrada manualmente ou aceita.
+    if(i+2<ts.length) candidates.push({score,next:ts[i+2].delta,index:i});
+  }
+  candidates.sort((a,b)=>a.score-b.score);
+  const close=candidates.filter(c=>c.score<=3.0).slice(0,5);
+  let chosen=close;
+  let explanation='';
+  if(chosen.length){
+    explanation='Padrões próximos encontrados: '+chosen.length+'.';
+  } else {
+    // Fallback: mudanças posteriores às sequências historicamente mais parecidas.
+    chosen=candidates.slice(0,Math.min(3,candidates.length));
+    if(!chosen.length){ setMessage('Ainda não há sequência histórica posterior suficiente para sugerir uma mudança.','warn'); return; }
+    explanation='Não houve correspondência forte; usando as 3 sequências mais próximas como referência fraca.';
+  }
+  const avg=[0,0,0];
+  chosen.forEach(c=>c.next.forEach((v,i)=>avg[i]+=v/chosen.length));
+  const current=pct(records[records.length-1]);
+  const suggestion=clampDistribution(current.map((v,i)=>v+avg[i]));
+  ['p1','p2','p3'].forEach((id,i)=>$(id).value=suggestion[i].toFixed(2));
+  updateVisual();
+  setMessage('Sugestão gerada: '+suggestion.map(fmt).join('% / ')+'%. '+explanation+' Confira e edite se desejar antes de salvar.','good');
+}
+function render(){
+  const n=records.length;
+  $('roundCount').textContent=n;
+  $('manualCount').textContent=Math.min(n,20)+'/20';
+  $('patternCount').textContent=Math.max(0,n-1);
+  $('progressText').textContent=Math.min(100,Math.round(n/20*100))+'%';
+  $('progressBar').style.width=Math.min(100,n/20*100)+'%';
+  $('roundLabel').value=roundName(n+1);
+  const manual=n<20;
+  $('modeLabel').value=manual?'Manual':'Sugestão / manual';
+  $('phasePill').textContent=manual?'APRENDIZADO MANUAL':'SUGESTÕES ATIVADAS';
+  $('phasePill').className='pill '+(manual?'manual':'auto');
+  $('suggestBtn').disabled=manual;
+  $('undoBtn').disabled=n===0;
+  $('historyInfo').textContent=n+' registro(s)';
+  const body=$('historyBody');
+  if(!n){body.innerHTML='<tr><td colspan="7" class="empty">Os registros aparecerão aqui.</td></tr>';return;}
+  body.innerHTML=records.map((r,i)=>{
+    const d=i?transition(records[i-1],r):null;
+    const change=d?d.map((v,j)=>'C'+(j+1)+' '+(v>0?'+':'')+fmt(v)+' pp').join(' · '):'—';
+    const source=r.source==='auto'?'<span class="pill auto">Sugestão aceita</span>':'<span class="pill manual">Manual</span>';
+    return `<tr><td class="num">${i+1}</td><td><strong>${r.number}</strong></td><td class="num">${fmt(r.p1)}%</td><td class="num">${fmt(r.p2)}%</td><td class="num">${fmt(r.p3)}%</td><td>${change}</td><td>${source}</td></tr>`;
+  }).reverse().join('');
+}
+function clearFields(){ $('number').value=''; ['p1','p2','p3'].forEach(id=>$(id).value=''); updateVisual(); }
+function saveRecord(){
+  const num=Number($('number').value);
+  if($('number').value.trim()===''||!Number.isInteger(num)||num<0||num>36){setMessage('Informe um número inteiro entre 0 e 36.','warn');return;}
+  const {vals,valid}=sumInputs();
+  if(!valid){setMessage('As três porcentagens precisam estar entre 0 e 100 e somar exatamente 100%.','warn');return;}
+  const source=records.length>=20?'auto':'manual';
+  records.push({number:num,p1:+vals[0].toFixed(2),p2:+vals[1].toFixed(2),p3:+vals[2].toFixed(2),source,createdAt:new Date().toISOString()});
+  persist(); render(); clearFields();
+  setMessage('Rodada '+records.length+' salva. '+(records.length===20?'Aprendizado manual concluído. A partir da próxima rodada, as sugestões ficam disponíveis.':'Registro adicionado ao histórico.'),'good');
+}
+function download(name,content,type){
+  const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+function exportJSON(){
+  download('historico_roleta_aprendizado.json',JSON.stringify({app:'Painel de Aprendizado da Roleta',version:1,exportedAt:new Date().toISOString(),records},null,2),'application/json');
+}
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"';}
+function exportCSV(){
+  const rows=[['rodada','numero','coluna_1_pct','coluna_2_pct','coluna_3_pct','origem','data']];
+  records.forEach((r,i)=>rows.push([i+1,r.number,r.p1,r.p2,r.p3,r.source,r.createdAt]));
+  download('historico_roleta_aprendizado.csv','\uFEFF'+rows.map(row=>row.map(csvCell).join(';')).join('\n'),'text/csv;charset=utf-8');
+}
+function undo(){
+  if(!records.length)return;
+  if(!confirm('Desfazer a última rodada? O registro será removido do histórico.'))return;
+  records.pop();persist();render();setMessage('Última rodada desfeita. O aprendizado será recalculado a partir do histórico restante.','good');
+}
+function importJSON(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const parsed=JSON.parse(reader.result);
+      const incoming=Array.isArray(parsed)?parsed:parsed.records;
+      if(!Array.isArray(incoming))throw new Error('Formato não reconhecido.');
+      const clean=incoming.map(r=>{
+        const number=Number(r.number),p1=Number(r.p1),p2=Number(r.p2),p3=Number(r.p3);
+        if(!Number.isInteger(number)||number<0||number>36||![p1,p2,p3].every(Number.isFinite)||[p1,p2,p3].some(v=>v<0||v>100)||Math.abs(p1+p2+p3-100)>.011)throw new Error('Há um registro inválido no arquivo.');
+        return {number,p1,p2,p3,source:r.source==='auto'?'auto':'manual',createdAt:r.createdAt||new Date().toISOString()};
+      });
+      if(!confirm('Importar '+clean.length+' rodadas? Isso substituirá o histórico atual.'))return;
+      records=clean;persist();render();clearFields();setMessage('Backup importado com sucesso.','good');
+    }catch(e){setMessage('Não foi possível importar: '+e.message,'warn');}
+    $('importFile').value='';
+  };
+  reader.readAsText(file);
+}
+['p1','p2','p3'].forEach(id=>$(id).addEventListener('input',updateVisual));
+$('suggestBtn').addEventListener('click',generateSuggestion);
+$('saveBtn').addEventListener('click',saveRecord);
+$('clearBtn').addEventListener('click',()=>{clearFields();setMessage('Campos limpos. Os registros salvos foram mantidos.');});
+$('undoBtn').addEventListener('click',undo);
+$('exportJsonBtn').addEventListener('click',exportJSON);
+$('exportCsvBtn').addEventListener('click',exportCSV);
+$('importFile').addEventListener('change',e=>{if(e.target.files[0])importJSON(e.target.files[0]);});
+$('resetBtn').addEventListener('click',()=>{if(confirm('Tem certeza? Todos os registros salvos neste navegador serão apagados. Exporte um backup antes, se necessário.')){records=[];persist();render();clearFields();setMessage('Todos os registros foram apagados.');}});
+render();updateVisual();
+})();
+</script>
+</body>
+</html>
